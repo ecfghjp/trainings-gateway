@@ -1,0 +1,69 @@
+server:
+   port: 9191
+   ssl:
+      enabled: true
+      key-store: classpath:com.ecfghjp.com.p12
+      key-store-type: pkcs12
+      key-alias: selfsigned_localhost_sslserver
+
+spring:
+   application:
+      name: TRAINING-API-GATEWAY
+   cloud:
+      gateway:
+         routes:
+            - id: TRAINING-SERVICE
+              uri: lb://TRAINING-SERVICE
+              predicates:
+                 - Path= /training/**
+              filters:
+                 - name: CircuitBreaker
+                   args:
+                      name: TRAINING-SERVICE
+                      fallbackuri: forward:/trainingfallback
+                        
+              
+            - id: EMPLOYEE-SERVICE
+              uri: lb://EMPLOYEE-SERVICE
+              predicates:
+                 - Path= /employee/**
+              filters:
+                 - name: CircuitBreaker
+                   args: 
+                      name: EMPLOYEE-SERVICE
+                      fallbackuri: forward:/employeefallback
+                      
+            - id: STATUS-SERVICE
+              uri: lb://STATUS-SERVICE
+              predicates:
+                 - Path= /status/**
+              filters:
+                 - name: CircuitBreaker
+                   args: 
+                      name: STATUS-SERVICE
+                      fallbackuri: forward:/statusfallback
+            
+hystrix:
+   command:
+      fallbackcmd:
+         execution:
+            isolation:
+               thread:
+                  timeoutInMilliseconds: 5000
+management:
+   endpoints:
+      web:
+        exposure:
+            include: hystrix.stream
+eureka:
+   client:
+      register-with-eureka: true
+      fetch-registry: true
+      service-url:
+         defaultZone: http://localhost:8761/eureka/
+   instance:
+      hostname: localhost
+logging:
+  level:
+    ROOT: DEBUG
+      
